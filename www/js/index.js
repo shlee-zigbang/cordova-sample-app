@@ -24,9 +24,9 @@ document.addEventListener('deviceready', onDeviceReady, false);
 const URL = 'https://sp.dev.hogangnono.com/videoCall/player?channelId=be18cc1f529442499cf4737fcd9506e6'
 const OPTION = 'zoom=no,hidenavigationbuttons=yes,location=no,toolbar=no,usewkwebview=yes,allowinlinemediaplayback=yes,disallowoverscroll=yes'
 
-function openAgora() {
+function openUrl(url) {
     if (window.cordova.InAppBrowser) {
-        const win = window.cordova.InAppBrowser.open(URL, '_blank', OPTION)
+        const win = window.cordova.InAppBrowser.open(url, '_blank', OPTION)
 
         win.addEventListener('message', (m) => {
             if (msg?.data?.action === 'close') {
@@ -42,38 +42,56 @@ function onDeviceReady() {
     console.log('Running cordova-' + cordova.platformId + '@' + cordova.version);
 }
 
+function checkPermission(callback) {
+    if (window.cordova.platformId === 'android') {
+        /*
+        <uses-permission android:name="android.permission.INTERNET" />
+        <uses-permission android:name="android.permission.CAMERA" />
+        <uses-permission android:name="android.permission.RECORD_AUDIO" />
+        <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+        <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+        <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+        <uses-permission android:name="android.permission.BLUETOOTH" />
+        */
+        cordova.plugins.permissions.requestPermissions(
+            [
+                cordova.plugins.permissions.CAMERA,
+                cordova.plugins.permissions.RECORD_AUDIO,
+                cordova.plugins.permissions.MODIFY_AUDIO_SETTINGS,
+                cordova.plugins.permissions.ACCESS_WIFI_STATE,
+                cordova.plugins.permissions.ACCESS_NETWORK_STATE,
+                cordova.plugins.permissions.BLUETOOTH,
+            ],
+            () => {
+                console.log('permissions success')
+                callback()
+            },
+            () => console.log('permissions error'),
+        )
+    } else {
+        openAgora()
+    }
+}
+
 window.addEventListener('DOMContentLoaded', function() {
     const btn = document.getElementById('btn-start')
 
-    btn.addEventListener('click', function () {
-        debugger
-        if (window.cordova.platformId === 'android') {
-            /*
-            <uses-permission android:name="android.permission.INTERNET" />
-            <uses-permission android:name="android.permission.CAMERA" />
-            <uses-permission android:name="android.permission.RECORD_AUDIO" />
-            <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-            <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-            <uses-permission android:name="android.permission.BLUETOOTH" />
-            */
-            cordova.plugins.permissions.requestPermissions(
-                [
-                    cordova.plugins.permissions.CAMERA,
-                    cordova.plugins.permissions.RECORD_AUDIO,
-                    cordova.plugins.permissions.MODIFY_AUDIO_SETTINGS,
-                    cordova.plugins.permissions.ACCESS_WIFI_STATE,
-                    cordova.plugins.permissions.ACCESS_NETWORK_STATE,
-                    cordova.plugins.permissions.BLUETOOTH,
-                ],
-                () => {
-                    console.log('permissions success')
-                    openAgora()
-                },
-                () => console.log('permissions error'),
-            )
-        } else {
-            openAgora()
-        }
-    })
+    if (btn) {
+        btn.addEventListener('click', function () {
+            checkPermission(() => openUrl(URL))
+        })
+    }
+
+    const btnOpen = document.getElementById('btn-open')
+
+    if (btnOpen) {
+        btnOpen.addEventListener('click', function (e) {
+            const inputUrl = document.getElementById('text-input').value
+            if (inputUrl) {
+                checkPermission(() => {
+                    openUrl(inputUrl)
+                })
+            }
+        })
+    }
 })
